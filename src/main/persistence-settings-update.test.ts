@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { writeFileSync, rmSync, mkdtempSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { GlobalSettings } from '../shared/global-settings-types'
@@ -91,6 +91,68 @@ describe('Store', () => {
     expect(updated.terminalFontWeightBold).toBe(800)
     // Other fields preserved
     expect(updated.branchPrefix).toBe('git-username')
+  })
+
+  it('inherits portable settings and records dev-local overrides without copying stable state', async () => {
+    const stableUserDataPath = mkdtempSync(join(tmpdir(), 'orca-stable-settings-'))
+    const stableDataFile = join(stableUserDataPath, 'orca-data.json')
+    const stableData = {
+      settings: {
+        theme: 'dark',
+        terminalFontSize: 18,
+        defaultTuiAgent: 'codex',
+        activeRuntimeEnvironmentId: 'stable-runtime',
+        opencodeSessionCookie: 'stable-secret',
+        experimentalMobile: true
+      },
+      ui: {
+        sidebarWidth: 342,
+        lastActiveRepoId: 'stable-repo',
+        filterRepoIds: ['stable-repo']
+      }
+    }
+    writeFileSync(stableDataFile, JSON.stringify(stableData), 'utf-8')
+    writeFileSync(join(stableUserDataPath, 'orca-devices.json'), 'stable-device-registry', 'utf-8')
+    writeFileSync(join(stableUserDataPath, 'orca-e2ee-keypair.json'), 'stable-keypair', 'utf-8')
+    writeFileSync(join(stableUserDataPath, 'orca-runtime.json'), 'stable-runtime-pointer', 'utf-8')
+
+    try {
+      const store = await createStore({ portableSettings: { stableUserDataPath } })
+
+      expect(store.getSettings().theme).toBe('dark')
+      expect(store.getSettings().terminalFontSize).toBe(18)
+      expect(store.getSettings().activeRuntimeEnvironmentId).toBeNull()
+      expect(store.getSettings().opencodeSessionCookie).toBe('')
+      expect(store.getSettings().experimentalMobile).toBe(false)
+      expect(store.getUI().sidebarWidth).toBe(342)
+      expect(store.getUI().lastActiveRepoId).toBeNull()
+      expect(store.getUI().filterRepoIds).toEqual([])
+      expect(existsSync(join(testState.dir, 'orca-devices.json'))).toBe(false)
+      expect(existsSync(join(testState.dir, 'orca-e2ee-keypair.json'))).toBe(false)
+      expect(existsSync(join(testState.dir, 'orca-runtime.json'))).toBe(false)
+
+      store.updateUI({ lastActiveRepoId: 'dev-repo' })
+      store.flush()
+      const unrelatedUIOverrides = JSON.parse(
+        readFileSync(join(testState.dir, 'orca-dev-portable-overrides.json'), 'utf-8')
+      ) as { settings: Record<string, unknown>; ui: Record<string, unknown> }
+      expect(unrelatedUIOverrides.ui).not.toHaveProperty('sidebarWidth')
+
+      store.updateSettings({ theme: 'light', terminalFontSize: 15 })
+      store.updateUI({ sidebarWidth: 410 })
+      store.flush()
+
+      const overrides = JSON.parse(
+        readFileSync(join(testState.dir, 'orca-dev-portable-overrides.json'), 'utf-8')
+      ) as { settings: Record<string, unknown>; ui: Record<string, unknown> }
+      expect(overrides.settings).toMatchObject({ theme: 'light', terminalFontSize: 15 })
+      expect(overrides.settings).not.toHaveProperty('activeRuntimeEnvironmentId')
+      expect(overrides.ui).toMatchObject({ sidebarWidth: 410 })
+      expect(overrides.ui).not.toHaveProperty('lastActiveRepoId')
+      expect(readFileSync(stableDataFile, 'utf-8')).toBe(JSON.stringify(stableData))
+    } finally {
+      rmSync(stableUserDataPath, { recursive: true, force: true })
+    }
   })
 
   it('persists the agent skill sharing capability as an exact boolean', async () => {

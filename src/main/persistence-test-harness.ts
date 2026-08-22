@@ -11,11 +11,16 @@ import { folderWorkspaceKey, worktreeWorkspaceKey } from '../shared/workspace-sc
 export const testState = { dir: '' }
 
 /** Reset modules and dynamically import Store so the data-file path picks up the current testState.dir */
-export async function createStore() {
+export async function createStore(
+  options: {
+    dataFile?: string
+    portableSettings?: { stableUserDataPath: string }
+  } = {}
+) {
   vi.resetModules()
   const { Store, initDataPath } = await import('./persistence')
   initDataPath()
-  return new Store()
+  return new Store(options)
 }
 
 export async function withPlatform<T>(platform: NodeJS.Platform, fn: () => Promise<T>): Promise<T> {

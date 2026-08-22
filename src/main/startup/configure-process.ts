@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { getVersionManagerBinPaths } from '../codex-cli/command'
@@ -7,6 +7,8 @@ import { getMainE2EConfig } from '../e2e-config'
 
 const DEV_PARENT_SHUTDOWN_GRACE_MS = 3000
 const HTTP1_COMPATIBILITY_ENV_VAR = 'ORCA_DISABLE_HTTP2'
+export const DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR =
+  'ORCA_DEV_PORTABLE_SETTINGS_SOURCE_USER_DATA_PATH'
 const TRUE_ENV_VALUES = new Set(['1', 'true', 'yes', 'on'])
 const FALSE_ENV_VALUES = new Set(['0', 'false', 'no', 'off'])
 let devParentShutdownRequested = false
@@ -153,6 +155,7 @@ export function patchPackagedProcessPath(): void {
 export function configureDevUserDataPath(isDev: boolean): void {
   const e2eConfig = getMainE2EConfig()
   if (e2eConfig.userDataDir) {
+    delete process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR]
     // Why: the E2E suite launches a fresh Electron app for each spec. A
     // dedicated userData path per launch prevents persisted repos, worktrees,
     // and session state from leaking between tests through the shared dev
@@ -160,7 +163,7 @@ export function configureDevUserDataPath(isDev: boolean): void {
     const e2eHomeDir = process.env.ORCA_E2E_HOME_DIR ?? join(e2eConfig.userDataDir, 'home')
     // Why: E2E imports can resolve os.homedir() before Electron is ready. Abort
     // startup if a direct launch skipped the disposable Node-home contract.
-    if (!areSameE2EHomePath(homedir(), e2eHomeDir)) {
+    if (!areSamePath(homedir(), e2eHomeDir)) {
       throw new Error('Refusing to start E2E outside its disposable home boundary')
     }
     // Why: on macOS Electron resolves app.getPath('home') from the native user
@@ -172,21 +175,36 @@ export function configureDevUserDataPath(isDev: boolean): void {
   }
 
   if (!isDev) {
+    delete process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR]
     return
   }
+  const stableUserDataPath = app.getPath('userData')
   const overrideUserDataPath = process.env.ORCA_DEV_USER_DATA_PATH
+  const devUserDataPath = overrideUserDataPath ?? join(app.getPath('appData'), 'orca-dev')
+  if (areSamePath(stableUserDataPath, devUserDataPath)) {
+    throw new Error('Refusing to start dev Orca with the stable userData path')
+  }
+  process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR] = stableUserDataPath
   if (overrideUserDataPath) {
     // Why: automated repros need an isolated profile so the dev's persisted tabs/worktrees don't skew startup and hide window bugs.
     app.setPath('userData', overrideUserDataPath)
     return
   }
   // Why: without a dev-only path, pnpm dev overwrites the packaged app's runtime pointer under userData and breaks the orca CLI.
-  app.setPath('userData', join(app.getPath('appData'), 'orca-dev'))
+  app.setPath('userData', devUserDataPath)
 }
 
-function areSameE2EHomePath(left: string, right: string): boolean {
-  const normalizedLeft = resolve(left)
-  const normalizedRight = resolve(right)
+function areSamePath(left: string, right: string): boolean {
+  const normalize = (value: string): string => {
+    const resolved = resolve(value)
+    try {
+      return realpathSync(resolved)
+    } catch {
+      return resolved
+    }
+  }
+  const normalizedLeft = normalize(left)
+  const normalizedRight = normalize(right)
   return process.platform === 'win32'
     ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
     : normalizedLeft === normalizedRight

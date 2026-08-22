@@ -43,6 +43,7 @@ export type SettingsMutationOperations = {
   removeRetainedBlob: (
     slot: Parameters<ProtectedSecretPersistence['removeRetainedBlob']>[0]
   ) => void
+  recordPortableSettingsUpdate?: (updates: Partial<GlobalSettings>) => void
   scheduleSave: () => void
   notifySettingsChanged: (updates: Partial<GlobalSettings>, originWebContentsId?: number) => void
 }
@@ -236,13 +237,14 @@ export function updateSettings(
     }),
     ...(mergedTelemetry !== undefined ? { telemetry: mergedTelemetry } : {})
   }
-  operations.scheduleSave()
   const changedUpdates = {} as Partial<GlobalSettings> & Record<string, unknown>
   for (const key of Object.keys(sanitizedUpdates) as (keyof GlobalSettings)[]) {
     if (!Object.is(previousSettings[key], operations.state.settings[key])) {
       changedUpdates[String(key)] = operations.state.settings[key]
     }
   }
+  operations.recordPortableSettingsUpdate?.(changedUpdates)
+  operations.scheduleSave()
   if (options.notifyListeners === true && Object.keys(changedUpdates).length > 0) {
     operations.notifySettingsChanged(changedUpdates, options.originWebContentsId)
   }

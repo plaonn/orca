@@ -257,6 +257,60 @@ describe('configureDevUserDataPath', () => {
     expect(app.setPath).toHaveBeenCalledWith('userData', '/tmp/orca-dev-repro')
   })
 
+  it('captures stable userData as a read-only source and rejects using it as dev userData', async () => {
+    const { app } = await import('electron')
+    const { configureDevUserDataPath, DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR } =
+      await import('./configure-process')
+    const originalSource = process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR]
+    const originalOverride = process.env.ORCA_DEV_USER_DATA_PATH
+    const originalUserDataPath = app.getPath('userData')
+    app.setPath('userData', '/tmp/stable-orca')
+    process.env.ORCA_DEV_USER_DATA_PATH = '/tmp/stable-orca'
+
+    try {
+      expect(() => configureDevUserDataPath(true)).toThrow(/stable userData path/)
+    } finally {
+      restoreEnv(DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR, originalSource)
+      restoreEnv('ORCA_DEV_USER_DATA_PATH', originalOverride)
+      app.setPath('userData', originalUserDataPath)
+    }
+  })
+
+  it('seeds the portable source env before switching the dev userData path', async () => {
+    const { app } = await import('electron')
+    const { configureDevUserDataPath, DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR } =
+      await import('./configure-process')
+    const originalSource = process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR]
+    const originalOverride = process.env.ORCA_DEV_USER_DATA_PATH
+    const originalUserDataPath = app.getPath('userData')
+    app.setPath('userData', '/tmp/stable-orca')
+    delete process.env.ORCA_DEV_USER_DATA_PATH
+
+    try {
+      configureDevUserDataPath(true)
+      expect(process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR]).toBe('/tmp/stable-orca')
+      expect(app.setPath).toHaveBeenCalledWith('userData', join('/tmp/app-data', 'orca-dev'))
+    } finally {
+      restoreEnv(DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR, originalSource)
+      restoreEnv('ORCA_DEV_USER_DATA_PATH', originalOverride)
+      app.setPath('userData', originalUserDataPath)
+    }
+  })
+
+  it('clears the dev inheritance source for packaged launches', async () => {
+    const { configureDevUserDataPath, DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR } =
+      await import('./configure-process')
+    const originalSource = process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR]
+    process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR] = '/tmp/stable-orca'
+
+    try {
+      configureDevUserDataPath(false)
+      expect(process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR]).toBeUndefined()
+    } finally {
+      restoreEnv(DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR, originalSource)
+    }
+  })
+
   it('moves dev runs onto an orca-dev userData path', async () => {
     const { app } = await import('electron')
     const { configureDevUserDataPath } = await import('./configure-process')

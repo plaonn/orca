@@ -124,6 +124,7 @@ import {
   configureElectronNetworkCompatibility,
   configureDevUserDataPath,
   configureOrcaUserDataPathEnv,
+  DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR,
   disableUnsupportedChromiumFeatures,
   enableMainProcessGpuFeatures,
   installDevParentDisconnectQuit,
@@ -2246,7 +2247,16 @@ void app.whenReady().then(async () => {
   )
 
   const activeOrcaProfile = ensureActiveOrcaProfile()
-  store = new Store({ dataFile: activeOrcaProfile.dataFile })
+  const portableSettingsSource =
+    is.dev && !process.env.ORCA_E2E_USER_DATA_DIR
+      ? process.env[DEV_PORTABLE_SETTINGS_SOURCE_ENV_VAR]
+      : undefined
+  store = new Store({
+    dataFile: activeOrcaProfile.dataFile,
+    ...(portableSettingsSource
+      ? { portableSettings: { stableUserDataPath: portableSettingsSource } }
+      : {})
+  })
   // Why here: the host key store is a sidecar of the same profile, and every SSH connect consults
   // it. Left unbound it reports nothing trusted, which is safe but silently discards our own
   // accept records on every launch.

@@ -118,6 +118,7 @@ import {
   type RetiredNameRegistry
 } from '../../../shared/worktree/retired-name-registry'
 import { getRepoIdFromWorktreeId, getWorktreePathBasenameFromId } from '../../../shared/worktree/id'
+import { PortableSettingsInheritance } from '../portable-settings-inheritance'
 import { hasWorktreeRemovalRepoOwnerOnOtherHost } from '../../worktree-removal-repo-owner'
 import { isPathInsideOrEqual } from '../../../shared/cross-platform-path'
 import { normalizeTerminalQuickCommands } from '../../../shared/terminal-quick-commands'
@@ -498,6 +499,9 @@ function deleteRemovedTerminalScrollbackSnapshots(
 
 export type StoreOptions = {
   dataFile?: string
+  portableSettings?: {
+    stableUserDataPath: string
+  }
 }
 
 export type PtyBindingSourceExpectation = {
@@ -512,6 +516,7 @@ export class Store {
   // Why readonly: the operations wrappers below capture this reference once and are memoized.
   private readonly state: PersistedState
   private readonly dataFile: string
+  private readonly portableSettingsInheritance: PortableSettingsInheritance | null
   private readonly activeViewPreference: ActiveViewPreference
   private readonly terminalScrollbackSnapshotStorage: TerminalScrollbackSnapshotStorage
   private writeTimer: ReturnType<typeof setTimeout> | null = null
@@ -550,6 +555,12 @@ export class Store {
   constructor(options: StoreOptions = {}) {
     // Why: profile switching yields multiple state paths; capture per Store so late async writes can't follow a global path.
     this.dataFile = options.dataFile ?? getDataFile()
+    this.portableSettingsInheritance = options.portableSettings
+      ? new PortableSettingsInheritance({
+          dataFile: this.dataFile,
+          stableUserDataPath: options.portableSettings.stableUserDataPath
+        })
+      : null
     this.staleTempCleanup = removeStaleDurableWriteTempFiles(this.dataFile, {
       minimumAgeMs: STALE_DURABLE_WRITE_TEMP_AGE_MS
     })
@@ -1642,6 +1653,10 @@ export class Store {
       migrated.githubCache = readGithubCacheSnapshot(this.dataFile) ?? migrated.githubCache
     }
 
+    if (this.portableSettingsInheritance?.apply(migrated)) {
+      this.loadNeedsSave = true
+    }
+
     logPersistenceStartupMilestone('persistence-load-done', {
       repos: migrated.repos.length,
       workspaceSessionBytes: Buffer.byteLength(JSON.stringify(migrated.workspaceSession))
@@ -2673,6 +2688,8 @@ export class Store {
     return {
       state: this.state,
       removeRetainedBlob: (slot) => this.protectedSecrets.removeRetainedBlob(slot),
+      recordPortableSettingsUpdate: (updates) =>
+        this.portableSettingsInheritance?.recordSettingsUpdate(updates),
       scheduleSave: () => this.scheduleSave(),
       notifySettingsChanged: (updates, originWebContentsId) =>
         this.notifySettingsChanged(updates, originWebContentsId)
@@ -2692,6 +2709,8 @@ export class Store {
     return {
       state: this.state,
       removeRetainedBlob: (slot) => this.protectedSecrets.removeRetainedBlob(slot),
+      recordPortableUIUpdate: (updates) =>
+        this.portableSettingsInheritance?.recordUIUpdate(updates),
       setActiveView: (activeView) => this.activeViewPreference.set(activeView),
       getUI: () => this.getUI(),
       scheduleSave: () => this.scheduleSave(),

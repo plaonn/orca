@@ -48,6 +48,7 @@ export type UIUpdateOperations = {
   removeRetainedBlob: (
     slot: Parameters<ProtectedSecretPersistence['removeRetainedBlob']>[0]
   ) => void
+  recordPortableUIUpdate?: (updates: Partial<PersistedState['ui']>) => void
   setActiveView: (activeView: PersistedState['ui']['activeView'] | undefined) => boolean
   getUI: () => PersistedState['ui']
   scheduleSave: () => void
@@ -196,6 +197,14 @@ export function updatePersistedUI(
     return
   }
   operations.state.ui = nextUI
+  const changedUIUpdates = {} as Partial<PersistedState['ui']>
+  for (const key of Object.keys(nextUI)) {
+    const typedKey = key as keyof PersistedState['ui']
+    if (!persistedUIValuesEqual(previousUI[typedKey], nextUI[typedKey])) {
+      Object.assign(changedUIUpdates, { [typedKey]: nextUI[typedKey] })
+    }
+  }
+  operations.recordPortableUIUpdate?.(changedUIUpdates)
   operations.scheduleSave()
   operations.notifyUIChanged()
 }
