@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useAppStore } from '@/store'
-import { resolveBackendDraftStartup } from './worktree-draft-startup-view-mode'
+import { resolveBackendStartupViewMode } from './worktree-backend-startup-view-mode'
 
 type AppState = ReturnType<typeof useAppStore.getState>
 
@@ -20,7 +20,7 @@ function setRepoConnection(connectionId: string | null): void {
 }
 
 function viewModeFor(agent: string): string | undefined {
-  const startup = resolveBackendDraftStartup({ ...(request as object), agent } as never) as
+  const startup = resolveBackendStartupViewMode({ ...(request as object), agent } as never) as
     | { viewMode?: string }
     | undefined
   return startup?.viewMode
@@ -40,10 +40,10 @@ afterEach(() => {
   useAppStore.setState({ settings: initialSettings, repos: initialRepos } as Partial<AppState>)
 })
 
-describe('resolveBackendDraftStartup', () => {
+describe('resolveBackendStartupViewMode', () => {
   it('opens a local no-prompt backend startup in chat', () => {
     setRepoConnection(null)
-    const startup = resolveBackendDraftStartup({
+    const startup = resolveBackendStartupViewMode({
       ...(request as object),
       agent: 'claude',
       startup: { command: 'claude' },
@@ -56,7 +56,7 @@ describe('resolveBackendDraftStartup', () => {
   it('keeps an unsupported no-prompt backend startup in the terminal view', () => {
     setRepoConnection(null)
     expect(
-      resolveBackendDraftStartup({
+      resolveBackendStartupViewMode({
         ...(request as object),
         agent: 'gemini',
         startup: { command: 'gemini' },

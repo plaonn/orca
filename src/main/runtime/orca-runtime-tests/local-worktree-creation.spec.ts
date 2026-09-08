@@ -22,7 +22,7 @@ import {
 } from '../orca-runtime-test-fixtures.spec'
 
 describe('OrcaRuntimeService', () => {
-  it('creates additional workspace metadata for folder-mode repos through runtime create', async () => {
+  it('preserves Chat UI for startup-agent-only folder-mode creates', async () => {
     const folderRepo = {
       id: 'folder-repo',
       path: '/workspace/folder',
@@ -85,13 +85,14 @@ describe('OrcaRuntimeService', () => {
       displayName: '\u0000\u202e',
       displayNameKind: 'user',
       createdWithAgent: 'codex',
-      startup: { command: 'codex', viewMode: 'chat' }
+      startupAgent: 'codex',
+      startupViewMode: 'chat'
     })
 
     expect(addWorktreeMock).not.toHaveBeenCalled()
     expect(createTerminal).toHaveBeenCalledWith(
       `id:${result.worktree.id}`,
-      expect.objectContaining({ command: 'codex', viewMode: 'chat' })
+      expect.objectContaining({ command: expect.stringContaining('codex'), viewMode: 'chat' })
     )
     expect(result.worktree).toEqual(
       expect.objectContaining({

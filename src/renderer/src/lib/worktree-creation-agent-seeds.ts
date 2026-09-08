@@ -45,6 +45,7 @@ function resolveLaunchAgentTabId(
   return stamped ?? args.primaryTabId ?? args.startupTerminalTabId ?? null
 }
 
+/** Applies the resolved initial view to a backend-spawned agent tab. */
 function applyBackendSpawnedInitialViewMode(args: {
   state: AppStoreSnapshot
   request: SeedRequest
@@ -86,6 +87,7 @@ function applyBackendSpawnedInitialViewMode(args: {
   }
 }
 
+/** Seeds agent-tab state after creation for both draft and auto-submit launches. */
 function applyAgentTabSeeds(args: {
   state: AppStoreSnapshot
   request: SeedRequest

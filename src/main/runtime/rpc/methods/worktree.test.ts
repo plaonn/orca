@@ -549,6 +549,34 @@ describe('worktree RPC methods', () => {
     )
   })
 
+  it('forwards startup view mode for startup-agent-only worktree creation', async () => {
+    const runtime = {
+      getRuntimeId: () => 'test-runtime',
+      dedupeWorktreeCreate: passthroughDedupe,
+      showRepo: vi.fn().mockResolvedValue(repo),
+      createManagedWorktree: vi.fn().mockResolvedValue({ worktree: { id: 'wt-1' } })
+    } as unknown as OrcaRuntimeService
+    const dispatcher = new RpcDispatcher({ runtime, methods: WORKTREE_METHODS })
+
+    await dispatcher.dispatch(
+      makeRequest('worktree.create', {
+        repo: 'repo-1',
+        name: 'agent-only-startup',
+        startupAgent: 'codex',
+        startupViewMode: 'chat',
+        activate: true
+      })
+    )
+
+    expect(runtime.createManagedWorktree).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startupAgent: 'codex',
+        startupViewMode: 'chat',
+        startup: undefined
+      })
+    )
+  })
+
   it('drops invalid startup launch config env at the runtime RPC boundary', async () => {
     const runtime = {
       getRuntimeId: () => 'test-runtime',

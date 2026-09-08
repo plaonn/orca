@@ -125,11 +125,13 @@ export async function buildWorktreeStartupForDraft(
   }
 }
 
+/** Builds a backend agent launch while preserving an explicitly resolved initial tab view. */
 export function buildWorktreeStartupForAgent(
   environment: StartupEnvironment & {
     agent: TuiAgent
     prompt?: string
     launchPreferences?: AgentLaunchPreferences
+    viewMode?: WorktreeStartupLaunch['viewMode']
     toSessionOptions: (
       preferences?: AgentLaunchPreferences
     ) => Parameters<typeof buildAgentStartupPlan>[0]['sessionOptions'] | undefined
@@ -170,7 +172,8 @@ export function buildWorktreeStartupForAgent(
       ...(startupPlan.startupCommandDelivery
         ? { startupCommandDelivery: startupPlan.startupCommandDelivery }
         : {}),
-      ...(startupPlan.env ? { env: startupPlan.env } : {})
+      ...(startupPlan.env ? { env: startupPlan.env } : {}),
+      ...(environment.viewMode ? { viewMode: environment.viewMode } : {})
     },
     ...(startupPlan.followupPrompt
       ? {

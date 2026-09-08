@@ -77,8 +77,8 @@ vi.mock('@/lib/worktree-creation-agent-seeds', () => ({
   seedAgentTabStateAfterWorktreeCreate: vi.fn()
 }))
 
-vi.mock('@/lib/worktree-draft-startup-view-mode', () => ({
-  resolveBackendDraftStartup: vi.fn()
+vi.mock('@/lib/worktree-backend-startup-view-mode', () => ({
+  resolveBackendStartupViewMode: vi.fn()
 }))
 
 vi.mock('@/lib/worktree-creation-flow-startup', () => ({

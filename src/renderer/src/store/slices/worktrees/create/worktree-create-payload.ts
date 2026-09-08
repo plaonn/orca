@@ -110,6 +110,7 @@ export function buildLocalWorktreeCreateArgs(
   }
 }
 
+/** Builds the runtime RPC payload, including optional backend startup metadata. */
 export function buildRuntimeWorktreeCreateParams(
   request: WorktreeCreateRequest,
   attempt: WorktreeCreateAttempt

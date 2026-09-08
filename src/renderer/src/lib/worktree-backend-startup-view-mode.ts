@@ -4,7 +4,8 @@ import { isNativeChatTranscriptLocalReadable } from '@/lib/native-chat-transcrip
 import { nativeChatRequiresLocalTranscript } from '@/lib/native-chat-supported-agent'
 import type { WorktreeCreationRequest } from '@/lib/pending-worktree-creation'
 
-export function resolveBackendDraftStartup(
+/** Applies the native-chat initial-view policy to backend-spawned agent launches. */
+export function resolveBackendStartupViewMode(
   request: WorktreeCreationRequest
 ): WorktreeCreationRequest['startup'] {
   if (!request.startup || !request.agent) {

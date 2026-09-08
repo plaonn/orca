@@ -49,6 +49,7 @@ export type RuntimeManagedWorktreeCreateArgs = {
   observeSetupCompletion?: boolean
   createdWithAgent?: TuiAgent
   startupAgent?: TuiAgent
+  startupViewMode?: WorktreeStartupLaunch['viewMode']
   startupLaunchPreferences?: AgentLaunchPreferences
   startupPrompt?: string
   pendingFirstAgentMessageRename?: boolean

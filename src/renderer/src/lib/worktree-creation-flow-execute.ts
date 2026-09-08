@@ -17,7 +17,7 @@ import { isAgentSessionHandleProvider } from '../../../shared/agent-session-prov
 import type { CreateWorktreeResult } from '../../../shared/worktree/create-types'
 import type { WorktreeCreationRequest } from '@/lib/pending-worktree-creation'
 import { createBrowserUuid } from '@/lib/browser-uuid'
-import { resolveBackendDraftStartup } from '@/lib/worktree-draft-startup-view-mode'
+import { resolveBackendStartupViewMode } from '@/lib/worktree-backend-startup-view-mode'
 import { buildWorktreeCreationStartupOpt } from '@/lib/worktree-creation-flow-startup'
 import { launchStructuredWorktreeSession } from '@/lib/worktree-creation-structured-session'
 import { completeWorktreeCreation } from '@/lib/worktree-creation-completion'
@@ -56,7 +56,9 @@ export async function executeWorktreeCreation(
     const provisionedRoot = getProvisionedRootCreateOptions(preparedRequest)
     const structuredLaunch = preparedRequest.agentLaunchRoute === 'structured-native-chat'
     const backendStartup =
-      provisionedRoot || structuredLaunch ? undefined : resolveBackendDraftStartup(preparedRequest)
+      provisionedRoot || structuredLaunch
+        ? undefined
+        : resolveBackendStartupViewMode(preparedRequest)
     result = await useAppStore
       .getState()
       .createWorktree(

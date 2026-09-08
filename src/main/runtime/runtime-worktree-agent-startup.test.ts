@@ -58,6 +58,19 @@ function launchCliNameFor(repo: Repo): string {
 }
 
 describe('buildWorktreeStartupForAgent host resolution', () => {
+  it('retains the requested view mode in an agent-only startup launch', () => {
+    const result = buildWorktreeStartupForAgent({
+      repo: makeRepo({}),
+      settings,
+      agent: 'claude',
+      viewMode: 'chat',
+      getLaunchPlatform: () => 'linux',
+      toSessionOptions: () => undefined
+    })
+
+    expect(result.startup).toMatchObject({ viewMode: 'chat' })
+  })
+
   // Why two hosts: one SSH fixture passes even when the launch shape is resolved off another
   // host's row, which is the shape of the `ssh:m4air` -> openclaw leak.
   it('drops the Linux-only rename for both spellings of SSH ownership on two hosts', () => {
