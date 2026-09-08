@@ -131,6 +131,34 @@ describe('seedAgentTabStateAfterWorktreeCreate', () => {
     )
   })
 
+  it('opens a backend-spawned no-prompt agent tab in chat', () => {
+    setTabs([{ id: 'agent-tab', launchAgent: 'claude', viewMode: 'terminal' }])
+
+    seedAgentTabStateAfterWorktreeCreate({
+      request: { agent: 'claude', startupPlan: request.startupPlan },
+      worktreeId: 'wt-1',
+      primaryTabId: 'agent-tab',
+      startupTerminalTabId: 'agent-tab',
+      backendSpawned: true
+    })
+
+    expect(tabViewMode('agent-tab')).toBe('chat')
+  })
+
+  it('keeps an unsupported backend-spawned no-prompt agent in the terminal view', () => {
+    setTabs([{ id: 'agent-tab', launchAgent: 'gemini', viewMode: 'chat' }])
+
+    seedAgentTabStateAfterWorktreeCreate({
+      request: { agent: 'gemini', startupPlan: request.startupPlan },
+      worktreeId: 'wt-1',
+      primaryTabId: 'agent-tab',
+      startupTerminalTabId: 'agent-tab',
+      backendSpawned: true
+    })
+
+    expect(tabViewMode('agent-tab')).toBe('terminal')
+  })
+
   it('moves a backend-spawned non-mirrorable draft out of an inherited chat view', () => {
     setTabs([{ id: 'agent-tab', launchAgent: 'claude', viewMode: 'chat' }])
 

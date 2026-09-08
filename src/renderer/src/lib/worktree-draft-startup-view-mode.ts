@@ -7,19 +7,20 @@ import type { WorktreeCreationRequest } from '@/lib/pending-worktree-creation'
 export function resolveBackendDraftStartup(
   request: WorktreeCreationRequest
 ): WorktreeCreationRequest['startup'] {
-  if (!request.startup || !request.agent || !request.launchDraftPrompt) {
+  if (!request.startup || !request.agent) {
     return request.startup
   }
   const state = useAppStore.getState()
   const repo = state.repos.find((entry) => entry.id === request.repoId)
   const connectionId = repo ? (repo.connectionId ?? null) : undefined
+  const promptDelivery = request.launchDraftPrompt ? ('draft' as const) : ('auto-submit' as const)
   const viewMode =
     decideInitialAgentTabViewMode({
       experimentalNativeChat: state.settings?.experimentalNativeChat,
       openAgentTabsInChatByDefault: state.settings?.openAgentTabsInChatByDefault,
       agent: request.agent,
-      promptDelivery: 'draft',
-      launchDraftText: request.launchDraftPrompt,
+      promptDelivery,
+      ...(request.launchDraftPrompt ? { launchDraftText: request.launchDraftPrompt } : {}),
       ...(nativeChatRequiresLocalTranscript(request.agent)
         ? {
             nativeChatTranscriptIsLocalReadable: isNativeChatTranscriptLocalReadable(connectionId)

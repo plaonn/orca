@@ -778,6 +778,34 @@ describe('staged background worktree creation', () => {
     })
   })
 
+  it('passes chat mode to backend startup for a no-prompt native-chat agent', async () => {
+    store.settings.experimentalNativeChat = true
+    store.settings.openAgentTabsInChatByDefault = true
+    store.repos = [{ id: 'repo-1', connectionId: null }]
+    continueBackgroundWorktreeCreation(
+      'creation-1',
+      makeRequest({
+        agent: 'claude',
+        startup: { command: 'claude --prefill x', launchAgent: 'claude' },
+        startupPlan: {
+          agent: 'claude',
+          launchCommand: 'claude --prefill x',
+          expectedProcess: 'claude',
+          followupPrompt: null,
+          launchConfig: { agentArgs: '', agentEnv: {} }
+        }
+      })
+    )
+
+    await vi.waitFor(() => expect(store.createWorktree).toHaveBeenCalled())
+    const createCall = store.createWorktree.mock.calls[0] as unknown[] | undefined
+    expect(createCall?.[16]).toEqual({
+      command: 'claude --prefill x',
+      launchAgent: 'claude',
+      viewMode: 'chat'
+    })
+  })
+
   it('carries launchDraftText into activation for an argv-prefill launch', async () => {
     // Why: the draft rides inside `launchCommand` here, so the plan sets no
     // draftPrompt — without launchDraftText the initial view-mode decision

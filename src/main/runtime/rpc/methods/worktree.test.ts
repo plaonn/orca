@@ -512,6 +512,7 @@ describe('worktree RPC methods', () => {
         startupAgent: 'codex',
         startupCommand: "codex 'summarize repo'",
         startupCommandDelivery: 'shell-ready',
+        startupViewMode: 'chat',
         startupEnv: { ORCA_AGENT_MODE: 'direct' },
         startupLaunchConfig: {
           agentCommand: 'codex',
@@ -536,6 +537,7 @@ describe('worktree RPC methods', () => {
         startup: {
           command: "codex 'summarize repo'",
           startupCommandDelivery: 'shell-ready',
+          viewMode: 'chat',
           env: { ORCA_AGENT_MODE: 'direct' },
           launchConfig: {
             agentCommand: 'codex',

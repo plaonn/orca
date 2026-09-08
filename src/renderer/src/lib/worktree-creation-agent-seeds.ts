@@ -45,7 +45,7 @@ function resolveLaunchAgentTabId(
   return stamped ?? args.primaryTabId ?? args.startupTerminalTabId ?? null
 }
 
-function applyBackendSpawnedDraftViewMode(args: {
+function applyBackendSpawnedInitialViewMode(args: {
   state: AppStoreSnapshot
   request: SeedRequest
   agent: TuiAgent
@@ -54,16 +54,17 @@ function applyBackendSpawnedDraftViewMode(args: {
   backendSpawned: boolean
 }): void {
   const { state, request, agent, tabId, worktreeId, backendSpawned } = args
-  if (!backendSpawned || !request.launchDraftPrompt) {
+  if (!backendSpawned) {
     return
   }
+  const promptDelivery = request.launchDraftPrompt ? ('draft' as const) : ('auto-submit' as const)
   const desiredViewMode =
     decideInitialAgentTabViewMode({
       experimentalNativeChat: state.settings?.experimentalNativeChat,
       openAgentTabsInChatByDefault: state.settings?.openAgentTabsInChatByDefault,
       agent,
-      promptDelivery: 'draft',
-      launchDraftText: request.launchDraftPrompt,
+      promptDelivery,
+      ...(request.launchDraftPrompt ? { launchDraftText: request.launchDraftPrompt } : {}),
       ...(nativeChatRequiresLocalTranscript(agent)
         ? {
             nativeChatTranscriptIsLocalReadable: isNativeChatTranscriptLocalReadable(
@@ -94,7 +95,7 @@ function applyAgentTabSeeds(args: {
   backendSpawned: boolean
 }): void {
   const { request, agent, tabId } = args
-  applyBackendSpawnedDraftViewMode(args)
+  applyBackendSpawnedInitialViewMode(args)
   seedNativeChatAppliedSessionOptions(tabId, agent, request.startupPlan?.sessionOptions)
   // Why: draft launch context reaches only the TUI input; seed the
   // chat-composer copy so it isn't invisible in the chat view.

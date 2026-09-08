@@ -129,6 +129,7 @@ export function buildRuntimeWorktreeCreateParams(
           ...(startup.startupCommandDelivery
             ? { startupCommandDelivery: startup.startupCommandDelivery }
             : {}),
+          ...(startup.viewMode ? { startupViewMode: startup.viewMode } : {}),
           activate: true
         }
       : {})

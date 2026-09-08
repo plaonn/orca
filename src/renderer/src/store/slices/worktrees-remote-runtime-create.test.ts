@@ -249,6 +249,7 @@ describe('worktree remote runtime mutations', () => {
         {
           command: "codex 'summarize repo'",
           env: { ORCA_AGENT_MODE: 'direct' },
+          viewMode: 'chat',
           launchConfig: {
             agentCommand: 'codex',
             agentArgs: '--model gpt-5',
@@ -269,6 +270,7 @@ describe('worktree remote runtime mutations', () => {
           createdWithAgent: 'codex',
           startupCommand: "codex 'summarize repo'",
           startupEnv: { ORCA_AGENT_MODE: 'direct' },
+          startupViewMode: 'chat',
           startupLaunchConfig: {
             agentCommand: 'codex',
             agentArgs: '--model gpt-5',

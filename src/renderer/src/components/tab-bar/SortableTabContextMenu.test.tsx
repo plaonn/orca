@@ -217,6 +217,25 @@ describe('SortableTabContextMenu', () => {
     expect(container.textContent).not.toContain('Switch to chat view')
   })
 
+  it('exposes the bridge terminal-to-chat switch and invokes it', () => {
+    const onToggleViewMode = vi.fn()
+    const { container } = renderMenu({ canToggleViewMode: true, onToggleViewMode })
+
+    expect(container.textContent).toContain('Switch to chat view')
+    act(() => getButton(container, 'Switch to chat view').click())
+    expect(onToggleViewMode).toHaveBeenCalledOnce()
+  })
+
+  it('exposes the bridge chat-to-terminal switch', () => {
+    const { container } = renderMenu({
+      canToggleViewMode: true,
+      isChatView: true,
+      onToggleViewMode: vi.fn()
+    })
+
+    expect(container.textContent).toContain('Switch to terminal view')
+  })
+
   it('dispatches split requests and activates inactive terminal tabs first', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
     const { container, onActivate } = renderMenu({ isActive: false })

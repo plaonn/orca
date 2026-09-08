@@ -41,6 +41,30 @@ afterEach(() => {
 })
 
 describe('resolveBackendDraftStartup', () => {
+  it('opens a local no-prompt backend startup in chat', () => {
+    setRepoConnection(null)
+    const startup = resolveBackendDraftStartup({
+      ...(request as object),
+      agent: 'claude',
+      startup: { command: 'claude' },
+      launchDraftPrompt: undefined
+    } as never) as { command: string; viewMode?: string }
+
+    expect(startup).toEqual({ command: 'claude', viewMode: 'chat' })
+  })
+
+  it('keeps an unsupported no-prompt backend startup in the terminal view', () => {
+    setRepoConnection(null)
+    expect(
+      resolveBackendDraftStartup({
+        ...(request as object),
+        agent: 'gemini',
+        startup: { command: 'gemini' },
+        launchDraftPrompt: undefined
+      } as never)
+    ).toEqual({ command: 'gemini', viewMode: 'terminal' })
+  })
+
   // Why: omp discloses no hook transcript path, so it joins Grok in requiring a
   // locally readable sessions root. This call site must SUPPLY that flag for omp
   // too — gating on Grok alone left it undefined and parked every omp draft in
