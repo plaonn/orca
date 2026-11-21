@@ -1,3 +1,5 @@
+> This personal fork is archived. Its branches and patch history remain available for reference. For ongoing development and support, see [stablyai/orca](https://github.com/stablyai/orca).
+
 <h1 align="center">
   <a href="https://onOrca.dev"><img src="resources/build/icon.png" alt="Orca" width="64" valign="middle" /></a> Orca
 </h1>
